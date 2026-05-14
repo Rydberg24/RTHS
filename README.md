@@ -22,17 +22,30 @@ The framework demonstrates how Large Language Model (LLM) powered Harmonized Sys
 
 - **8 product categories** with realistic US HTS duty rates, unit values, regulatory penalty multipliers, and perishability flags.
 - **Stochastic mock ATLAS classifier** – confidence varies based on description clarity (consumer terms → high confidence, part numbers → low confidence); includes realistic error simulation.
-- ** Multi‑factor risk score**  
+- **Multi‑factor risk score**  
+```math
+\displaystyle
+R_{\text{total}}
+=
+(1-c)
+\times
+\left(
+Vd + P_{\text{reg}} r_{\text{reg}}
+\right)
+\times
+\text{vol}_{\text{factor}}
+\times
+\text{exp}_{\text{factor}}
+```
+
 $$
-R_{\text{total}} = (1-c) \times (V \cdot d + P_{\text{reg}} \times r_{\text{reg}}) \times \text{vol_factor} \times \text{exp_factor}
+\text{vol.factor} = \min\left(\frac{\text{pallet.qty}}{1200}, 1.0\right)
 $$
+
 $$
-\text{vol_factor} = \min\left(\frac{\text{pallet_qty}}{1200}, 1.0\right)
-$$
-$$
-\text{exp_factor} = 
-\begin{cases} 
-1 + \max\left(0, 1 - \frac{\text{days_left}}{90}\right) & \text{for perishables with } <90 \text{ days to expiry} \\
+\text{exp.factor} = 
+\begin{cases}
+1 + \max\left(0, 1 - \frac{\text{days.left}}{90}\right) & \text{for perishables with } <90 \text{ days to expiry} \\
 1.0 & \text{otherwise}
 \end{cases}
 $$
