@@ -60,8 +60,8 @@ $$
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/rthsn-framework.git
-   cd rthsn-framework
+   git clone https://github.com/yourusername/RTHSN.git
+   cd RTHSN
    ```
 
 2. (Optional) Create a virtual environment:
