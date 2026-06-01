@@ -190,7 +190,7 @@ This project is provided for academic and research purposes. For commercial use,
 Department of Engineering: Logistics and Supply Chain Management  
 Universitat Autònoma de Barcelona  
 08193 Bellaterra (Cerdanyola del Vallès), Barcelona, Spain  
-Email: 1733449a@uab.cat
+Email: akash.pillutla@autonoma.cat
 
 ## Acknowledgements
 
