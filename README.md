@@ -173,9 +173,6 @@ In `mock_atlas_classify()`, change:
 
 ## Citation
 
-If you use this code or the RTHSN framework in your research, please cite:
-
-> Pillutla, A. (2026). “A Real‑Time HSN Classification Framework for Warehouse Inbound Operations: Integrating Large Language Models with Material Handling Decision Systems”. Department of Engineering: Logistics and Supply Chain Management, Universitat Autònoma de Barcelona (under review).
 
 ## License
 
