@@ -4,9 +4,6 @@
 This repository contains the complete Python implementation of the **Real‑Time HSN Classification Framework (RTHSN)** introduced in the research paper:
 
 > *“A Real‑Time HSN Classification Framework for Warehouse Inbound Operations: Integrating Large Language Models with Material Handling Decision Systems”*  
-> Akash Pillutla  
-> Department of Engineering: Logistics and Supply Chain Management, Universitat Autònoma de Barcelona, 08193 Bellaterra (Cerdanyola del Vallès), Barcelona, Spain  
-> *(under review)*
 
 The framework demonstrates how Large Language Model (LLM) powered Harmonized System Nomenclature (HSN/HTS) classification can be integrated directly into a warehouse inbound receiving workflow – at the barcode scan point – enabling risk‑based put‑away decisions before any storage commitment.
 
