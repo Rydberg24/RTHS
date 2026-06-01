@@ -186,12 +186,6 @@ This project is provided for academic and research purposes. For commercial use,
 
 ## Author
 
-**Akash Pillutla**  
-Department of Engineering: Logistics and Supply Chain Management  
-Universitat Autònoma de Barcelona  
-08193 Bellaterra (Cerdanyola del Vallès), Barcelona, Spain  
-Email: akash.pillutla@autonoma.cat
-
 ## Acknowledgements
 
 The ATLAS LLM referenced in this framework is developed by FlexifyAI (arXiv:2509.18400). Synthetic data structure is inspired by real‑world WMS schemas.
