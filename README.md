@@ -1,11 +1,11 @@
 
-# RTHS Framework – Real Time HSN Classification framework for warehouse handling systems using LLM Integration
+# RTHS Framework – Real Time HS Classification framework for warehouse handling systems using LLM Integration
 
-This repository contains the complete Python implementation of the **Real‑Time HSN Classification Framework (RTHS)** introduced in the research paper:
+This repository contains the complete Python implementation of the **Real‑Time HS Classification Framework (RTHS)** introduced in the research paper:
 
-> *“A Real‑Time HSN Classification Framework for Warehouse Inbound Operations: Integrating Large Language Models with Material Handling Decision Systems”*  
+> *“A Real‑Time HS Classification Framework for Warehouse Inbound Operations: Integrating Large Language Models with Material Handling Decision Systems”*  
 
-The framework demonstrates how Large Language Model (LLM) powered Harmonized System Nomenclature (HSN/HTS) classification can be integrated directly into a warehouse inbound receiving workflow – at the barcode scan point – enabling risk‑based put‑away decisions before any storage commitment.
+The framework demonstrates how Large Language Model (LLM) powered Harmonized System  (HS/HTS) classification can be integrated directly into a warehouse inbound receiving workflow – at the barcode scan point – enabling risk‑based put‑away decisions before any storage commitment.
 
 ## Repository Contents
 
@@ -97,9 +97,9 @@ This script will:
 **Typical output (example):**
 ```
 RISK BASED TIER DISTRIBUTION
-  GREEN: 3621 (36.2%)
-  YELLOW: 4983 (49.8%)
-  RED: 1396 (14.0%)
+  GREEN: 3621 (62.7%)
+  YELLOW: 4983 (22.8%)
+  RED: 1396 (14.5%)
 
 Average Risk Score by Category:
 Furniture/Office Chairs    4.0826
@@ -129,7 +129,7 @@ The script will:
 
 Edit the `assign_tier()` function in either script. Default thresholds (from the paper’s recalibrated model) are:
 - GREEN ≤ 0.20
-- YELLOW ≤ 1.00
+- 0.20 < YELLOW ≤ 1.00
 - RED > 1.00
 
 ### Modifying product categories
