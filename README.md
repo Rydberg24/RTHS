@@ -1,7 +1,7 @@
 
-# RTHSN Framework – Real Time HSN Classification framework for warehouse handling systems using LLM Integration
+# RTHS Framework – Real Time HSN Classification framework for warehouse handling systems using LLM Integration
 
-This repository contains the complete Python implementation of the **Real‑Time HSN Classification Framework (RTHSN)** introduced in the research paper:
+This repository contains the complete Python implementation of the **Real‑Time HSN Classification Framework (RTHS)** introduced in the research paper:
 
 > *“A Real‑Time HSN Classification Framework for Warehouse Inbound Operations: Integrating Large Language Models with Material Handling Decision Systems”*  
 
@@ -11,8 +11,8 @@ The framework demonstrates how Large Language Model (LLM) powered Harmonized Sys
 
 | File | Description |
 |------|-------------|
-| `RTHSN Risk based Routing.py` | Main simulation script: generates synthetic dataset (10,000 scans, 8 product categories), runs the classification pipeline (mock ATLAS LLM), computes multi‑factor risk scores, assigns GREEN/YELLOW/RED tiers, and produces static visualisations (matplotlib) and CSV outputs. |
-| `RTHSN Risk based Routing_Plotly V.py` | Interactive dashboard version: after running the simulation (or loading an existing classified CSV), this script launches an interactive Plotly dashboard with filters, histograms, boxplots, and a data table for exploring results. |
+| `RTHS Risk based Routing.py` | Main simulation script: generates synthetic dataset (10,000 scans, 8 product categories), runs the classification pipeline (mock ATLAS LLM), computes multi‑factor risk scores, assigns GREEN/YELLOW/RED tiers, and produces static visualisations (matplotlib) and CSV outputs. |
+| `RTHS Risk based Routing_Plotly V.py` | Interactive dashboard version: after running the simulation (or loading an existing classified CSV), this script launches an interactive Plotly dashboard with filters, histograms, boxplots, and a data table for exploring results. |
 | `README.md` | This file. |
 
 ## Key Features
@@ -57,8 +57,8 @@ $$
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/RTHSN.git
-   cd RTHSN
+   git clone https://github.com/yourusername/RTHS.git
+   cd RTHS
    ```
 
 2. (Optional) Create a virtual environment:
@@ -80,7 +80,7 @@ $$
 ### 1. Run the main simulation (static outputs)
 
 ```bash
-python "RTHSN Risk based Routing.py"
+python "RTHS Risk based Routing.py"
 ```
 
 This script will:
@@ -113,7 +113,7 @@ Automotive/Brake Pads      0.4209
 Make sure you have already run the main simulation to generate `wms_10k_extended_risk_classified.csv`. Then run:
 
 ```bash
-python "RTHSN Risk based Routing_Plotly V.py"
+python "RTHS Risk based Routing_Plotly V.py"
 ```
 
 The script will:
