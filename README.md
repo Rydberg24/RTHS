@@ -188,5 +188,3 @@ The ATLAS LLM referenced in this framework is developed by FlexifyAI (arXiv:2509
 
 *For issues or questions, please open a GitHub issue or contact the author directly.*
 ```
-
-Now the equation inside `$$` will render as a proper mathematical expression on GitHub and other platforms that support LaTeX. You can copy and paste this directly into your `README.md` file.
