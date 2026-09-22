@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Akash Pillutla — RTHS: Real-Time HS Classification Framework</title>
+<meta name="description" content="RTHS — a real-time, LLM-powered Harmonised System classification framework for warehouse inbound routing. MSc Engineering Logistics and Supply Chain, Universitat Autònoma de Barcelona.">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          serif: ['Fraunces', 'Georgia', 'Cambria', 'serif'],
+          sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+          mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        },
+        colors: {
+          ink:     '#12131A',
+          ink2:    '#1A1C25',
+          ink3:    '#212430',
+          line:    '#2C2F3B',
+          paper:   '#ECEDF3',
+          muted:   '#9CA2B7',
+          faint:   '#838AA0',
+          brass:   '#C9A24B',
+          brassdim:'#8C7238',
+          tgreen:  '#3FC08D',
+          tamber:  '#E7A93D',
+          tred:    '#DB6552',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  :root{
+    --ink:#12131A; --ink2:#1A1C25; --ink3:#212430; --line:#2C2F3B;
+    --paper:#ECEDF3; --muted:#9CA2B7; --faint:#838AA0;
+    --brass:#C9A24B; --brassdim:#8C7238;
+    --tgreen:#3FC08D; --tamber:#E7A93D; --tred:#DB6552;
+    box-sizing:border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#12131A; --ink2:#1A1C25; --ink3:#212430; --line:#2C2F3B;
+      --paper:#ECEDF3; --muted:#9CA2B7; --faint:#838AA0;
+      --brass:#C9A24B; --brassdim:#8C7238;
+      --tgreen:#3FC08D; --tamber:#E7A93D; --tred:#DB6552;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#12131A; --ink2:#1A1C25; --ink3:#212430; --line:#2C2F3B;
+    --paper:#ECEDF3; --muted:#9CA2B7; --faint:#838AA0;
+    --brass:#C9A24B; --brassdim:#8C7238;
+    --tgreen:#3FC08D; --tamber:#E7A93D; --tred:#DB6552;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:calc(84px + env(safe-area-inset-top,0px));}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--brass); color:#161710;}
+  a{color:inherit;}
+  .ledger-bg{
+    background-image:
+      linear-gradient(var(--ink) 0%, var(--ink) 100%),
+      repeating-linear-gradient(to bottom, transparent 0, transparent 38px, rgba(255,255,255,0.018) 39px, transparent 40px);
+  }
+  .rule{border-top:1px solid var(--line);}
+  .rule-b{border-bottom:1px solid var(--line);}
+
+  /* ---------- icons ---------- */
+  .icon{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-0.15em;}
+
+  /* ---------- nav ---------- */
+  #topnav{
+    position:fixed; top:0; left:0; right:0; z-index:60;
+    padding-top:calc(env(safe-area-inset-top,0px) + 14px);
+    padding-bottom:14px;
+    background:rgba(18,19,26,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .navlink{position:relative; color:var(--muted); font-size:0.86rem; letter-spacing:0.01em; padding-bottom:3px; transition:color .2s ease;}
+  .navlink:hover{color:var(--paper);}
+  .navlink.active{color:var(--brass);}
+  .navlink.active::after{content:'';position:absolute;left:0;right:0;bottom:-3px;height:1px;background:var(--brass);}
+
+  /* ---------- buttons ---------- */
+  .btn{display:inline-flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:600;padding:12px 20px;border-radius:2px;transition:all .18s ease;white-space:nowrap;}
+  .btn-brass{background:var(--brass);color:#191A12;}
+  .btn-brass:hover{background:#D9B361; transform:translateY(-1px);}
+  .btn-line{border:1px solid var(--line); color:var(--paper); background:transparent;}
+  .btn-line:hover{border-color:var(--brass); color:var(--brass);}
+
+  /* ---------- stamp ---------- */
+  .stamp{transform:rotate(-9deg); color:var(--brass); opacity:0.9;}
+  .stamp text{fill:var(--brass); font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- stat ledger row ---------- */
+  .stat-strip{display:grid; grid-template-columns:repeat(2,1fr); border:1px solid var(--line);}
+  .stat-cell{padding:22px 20px; border-top:1px solid var(--line); border-right:1px solid var(--line);}
+  .stat-cell:nth-child(-n+2){border-top:none;}
+  .stat-cell:nth-child(2n){border-right:none;}
+  @media(min-width:768px){
+    .stat-strip{grid-template-columns:repeat(4,1fr);}
+    .stat-cell{border-top:none;}
+    .stat-cell:nth-child(2n){border-right:1px solid var(--line);}
+    .stat-cell:last-child{border-right:none;}
+  }
+  .stat-num{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:clamp(1.4rem,3.4vw,2rem); color:var(--paper); line-height:1;}
+  .stat-lbl{font-size:0.72rem; color:var(--muted); margin-top:8px; line-height:1.35;}
+
+  /* ---------- ledger table ---------- */
+  .ledger-table{width:100%; border-collapse:collapse; font-size:0.85rem;}
+  .ledger-table th{text-align:left; font-weight:600; color:var(--muted); font-size:0.72rem; padding:10px 14px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  .ledger-table td{padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--paper);}
+  .ledger-table tr:last-child td{border-bottom:1px solid var(--line);}
+  .ledger-table tr:hover td{background:rgba(201,162,75,0.045);}
+  .num{font-family:'IBM Plex Mono',monospace;}
+  .tier-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;position:relative;top:-1px;}
+
+  /* ---------- formula ---------- */
+  .formula-scroll{overflow-x:auto; padding:10px 4px 6px;}
+  .formula-scroll::-webkit-scrollbar{height:6px;}
+  .formula-scroll::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px;}
+  .formula-grid{
+    display:inline-grid;
+    grid-auto-flow:column;
+    grid-template-rows:auto auto auto;
+    align-items:center;
+    column-gap:clamp(10px,2.2vw,22px);
+    padding:6px clamp(4px,2vw,10px);
+    min-width:100%;
+    justify-content:center;
+  }
+  .f-bracket{grid-row:1 / span 3; width:11px; align-self:stretch;}
+  .f-bracket.l{border-left:3px solid var(--paper); border-top:3px solid var(--paper); border-bottom:3px solid var(--paper);}
+  .f-bracket.r{border-right:3px solid var(--paper); border-top:3px solid var(--paper); border-bottom:3px solid var(--paper);}
+  .f-op, .f-rtotal{grid-row:1; align-self:center; font-family:'IBM Plex Mono',monospace; color:var(--muted); font-size:clamp(1.05rem,2.5vw,1.5rem); padding:0 2px;}
+  .f-rtotal{color:var(--paper); font-weight:600;}
+  .f-expr{grid-row:1; align-self:center; font-family:'IBM Plex Mono',monospace; font-size:clamp(1.02rem,2.5vw,1.5rem); color:var(--paper); white-space:nowrap; padding:4px 8px; text-align:center;}
+  .f-brace{grid-row:2; align-self:center; width:100%; height:15px; color:var(--faint); margin-top:2px; transition:color .2s ease;}
+  .f-label{grid-row:3; align-self:start; font-size:0.68rem; color:var(--muted); text-align:center; max-width:130px; line-height:1.3; margin-top:5px; transition:color .2s ease;}
+  .f-term{display:contents; cursor:pointer;}
+  .f-term:hover .f-expr, .f-term.active .f-expr{color:var(--brass);}
+  .f-term:hover .f-brace, .f-term.active .f-brace{color:var(--brass);}
+  .f-term:hover .f-label, .f-term.active .f-label{color:var(--brass);}
+
+  /* ---------- process track ---------- */
+  .track-line{position:absolute; top:22px; left:0; right:0; height:1px; background:var(--line);}
+  .track-node{width:44px;height:44px;border-radius:50%;border:1px solid var(--line); display:flex;align-items:center;justify-content:center; background:var(--ink); transition:all .2s ease; z-index:1;}
+  .track-node.active{border-color:var(--brass); color:var(--brass); box-shadow:0 0 0 4px rgba(201,162,75,0.12);}
+
+  /* ---------- channel cards ---------- */
+  .channel{border:1px solid var(--line); border-top-width:3px; padding:24px; transition:all .2s ease; cursor:pointer;}
+  .channel.dim{opacity:0.55;}
+  .channel:hover{background:rgba(255,255,255,0.02);}
+
+  /* ---------- calculator ---------- */
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--line);border-radius:2px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--brass);cursor:pointer;border:2px solid var(--ink);}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--brass);cursor:pointer;border:2px solid var(--ink);border:none;}
+  .field-label{font-size:0.72rem; color:var(--muted); display:flex; justify-content:space-between; margin-bottom:8px;}
+  .field-val{font-family:'IBM Plex Mono',monospace; color:var(--paper);}
+  select.plain, .num-input{background:var(--ink2); border:1px solid var(--line); color:var(--paper); font-family:'IBM Plex Mono',monospace; font-size:0.85rem; padding:8px 10px; width:100%;}
+  .chip{border:1px solid var(--line); font-size:0.74rem; padding:7px 13px; color:var(--muted); transition:all .16s ease; cursor:pointer;}
+  .chip:hover, .chip.chip-active{border-color:var(--brass); color:var(--brass); background:rgba(201,162,75,0.06);}
+
+  /* ---------- tag / stamp chips ---------- */
+  .tag{border:1px solid var(--line); font-size:0.76rem; padding:7px 13px; color:var(--paper);}
+
+  /* ---------- misc ---------- */
+  .section-kicker{font-size:0.8rem; color:var(--brass); font-family:'IBM Plex Mono',monospace;}
+  h1,h2,h3,.font-serif{font-family:'Fraunces',Georgia,serif;}
+  ::-moz-focus-inner{border:0;}
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--brass); outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important;} }
+
+  #mobilemenu{position:fixed; inset:0; z-index:70; background:var(--ink); transform:translateX(100%); transition:transform .28s ease; padding-top:calc(env(safe-area-inset-top,0px) + 24px);}
+  #mobilemenu.open{transform:translateX(0);}
+</style>
+</head>
+<body class="ledger-bg">
+
+<!-- SVG ICON SPRITE -->
+<svg style="display:none">
+  <defs>
+    <symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><line x1="4" y1="12" x2="18" y2="12"/><polyline points="12,6 18,12 12,18"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M9 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-3"/><path d="M14 4h6v6"/><line x1="10" y1="14" x2="20" y2="4"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><polyline points="6,9 12,15 18,9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><polyline points="5,13 10,18 19,7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.3"/><polyline points="12,7.3 12,12 15.7,14"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.3 L21.3 20 H2.7 Z"/><line x1="12" y1="9.6" x2="12" y2="14"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-barcode" viewBox="0 0 24 24"><rect x="3" y="5" width="1.4" height="14" fill="currentColor" stroke="none"/><rect x="6" y="5" width="0.8" height="14" fill="currentColor" stroke="none"/><rect x="8.4" y="5" width="2" height="14" fill="currentColor" stroke="none"/><rect x="11.6" y="5" width="0.8" height="14" fill="currentColor" stroke="none"/><rect x="13.6" y="5" width="1.4" height="14" fill="currentColor" stroke="none"/><rect x="16.6" y="5" width="0.8" height="14" fill="currentColor" stroke="none"/><rect x="18.8" y="5" width="2" height="14" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7.2" ry="2.9"/><path d="M4.8 6v6c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9V6"/><path d="M4.8 12v6c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9v-6"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.2"/><line x1="12" y1="2" x2="12" y2="5.2"/><line x1="12" y1="18.8" x2="12" y2="22"/><line x1="2" y1="12" x2="5.2" y2="12"/><line x1="18.8" y1="12" x2="22" y2="12"/><line x1="9.8" y1="10" x2="14.2" y2="10"/><line x1="9.8" y1="14" x2="14.2" y2="14"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2l6.8 2.7v5.6c0 4.3-2.9 7.6-6.8 8.6-3.9-1-6.8-4.3-6.8-8.6V5.9L12 3.2z"/><polyline points="9,12.2 11.2,14.4 15.2,10"/></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5" cy="6.5" r="2"/><circle cx="19" cy="18" r="2"/><path d="M5 8.5c0 6.5 14 1.5 14 7.5" stroke-dasharray="2.6 2.6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7,10.5 12,15.5 17,10.5"/><path d="M5 19.5h14"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.2c2-1 5-1.2 8 0v13.6c-3-1.2-6-1-8 0z"/><path d="M20 5.2c-2-1-5-1.2-8 0v13.6c3-1.2 6-1 8 0z"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5.6A1.6 1.6 0 015.6 4H8"/><path d="M20 8V5.6A1.6 1.6 0 0018.4 4H16"/><path d="M4 16v2.4A1.6 1.6 0 005.6 20H8"/><path d="M20 16v2.4a1.6 1.6 0 01-1.6 1.6H16"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============ NAV ============ -->
+<nav id="topnav">
+  <div class="max-w-6xl mx-auto px-6 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-3">
+      <div class="w-9 h-9 border border-line flex items-center justify-center font-mono text-xs text-brass">AP</div>
+      <div class="leading-tight">
+        <div class="font-semibold text-sm text-paper">Akash Pillutla</div>
+        <div class="text-[11px] text-muted">Trade Compliance &amp; Supply Chain Professional</div>
+      </div>
+    </a>
+
+    <div class="hidden md:flex items-center gap-7">
+      <a href="#problem" class="navlink" data-nav>Problem</a>
+      <a href="#framework" class="navlink" data-nav>Framework</a>
+      <a href="#formula" class="navlink" data-nav>The Formula</a>
+      <a href="#tiers" class="navlink" data-nav>Risk Tiers</a>
+      <a href="#results" class="navlink" data-nav>Results</a>
+      <a href="#scope" class="navlink" data-nav>Limitations</a>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="https://github.com/Rydberg24/RTHS" target="_blank" rel="noopener" class="hidden sm:inline-flex btn btn-line !py-2 !px-3 text-xs">
+        <svg class="icon"><use href="#i-ext"/></svg> GitHub
+      </a>
+      <a href="https://www.linkedin.com/in/akash-pillutla-013646198/" target="_blank" rel="noopener" class="hidden sm:inline-flex btn btn-line !py-2 !px-3 text-xs">
+        <svg class="icon"><use href="#i-ext"/></svg> LinkedIn
+      </a>
+      <button onclick="toggleMenu(true)" class="md:hidden w-9 h-9 flex items-center justify-center border border-line text-paper" aria-label="Open menu">
+        <svg class="icon" style="width:18px;height:18px"><use href="#i-menu"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- mobile menu -->
+<div id="mobilemenu">
+  <div class="max-w-6xl mx-auto px-6 flex justify-between items-center mb-10">
+    <span class="font-mono text-xs text-brass">MENU</span>
+    <button onclick="toggleMenu(false)" class="w-9 h-9 flex items-center justify-center border border-line" aria-label="Close menu">
+      <svg class="icon" style="width:18px;height:18px"><use href="#i-close"/></svg>
+    </button>
+  </div>
+  <div class="flex flex-col px-6 gap-1">
+    <a href="#problem" onclick="toggleMenu(false)" class="py-4 rule-b text-xl font-serif">Problem &amp; Insight</a>
+    <a href="#framework" onclick="toggleMenu(false)" class="py-4 rule-b text-xl font-serif">Framework</a>
+    <a href="#formula" onclick="toggleMenu(false)" class="py-4 rule-b text-xl font-serif">The Formula</a>
+    <a href="#tiers" onclick="toggleMenu(false)" class="py-4 rule-b text-xl font-serif">Risk Tiers</a>
+    <a href="#results" onclick="toggleMenu(false)" class="py-4 rule-b text-xl font-serif">Results</a>
+    <a href="#scope" onclick="toggleMenu(false)" class="py-4 rule-b text-xl font-serif">Limitations</a>
+    <a href="#skills" onclick="toggleMenu(false)" class="py-4 text-xl font-serif">Competencies</a>
+    <div class="flex gap-3 mt-8">
+      <a href="https://github.com/Rydberg24/RTHS" target="_blank" rel="noopener" class="btn btn-line text-xs">GitHub</a>
+      <a href="https://www.linkedin.com/in/akash-pillutla-013646198/" target="_blank" rel="noopener" class="btn btn-line text-xs">LinkedIn</a>
+    </div>
+  </div>
+</div>
+
+<div id="top"></div>
+
+<!-- ============ HERO ============ -->
+<header class="max-w-6xl mx-auto px-6 pt-32 md:pt-44 pb-16 relative">
+
+  <svg viewBox="0 0 160 160" class="stamp hidden lg:block absolute right-6 top-36 w-32 h-32 xl:w-36 xl:h-36" aria-hidden="true">
+    <circle cx="80" cy="80" r="76" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    <circle cx="80" cy="80" r="66" fill="none" stroke="currentColor" stroke-width="1"/>
+    <path id="stampcircle" fill="none" d="M 80,14 A 66,66 0 1 1 79.9,14"/>
+    <text font-size="9.6" letter-spacing="2.5">
+      <textPath href="#stampcircle" startOffset="2%">PROOF OF CONCEPT • SIMULATION-BASED •</textPath>
+    </text>
+    <text x="80" y="76" text-anchor="middle" font-size="15" letter-spacing="1">RTHS</text>
+    <text x="80" y="92" text-anchor="middle" font-size="7" letter-spacing="3">FRAMEWORK</text>
+  </svg>
+
+  <div class="max-w-3xl">
+    <h1 class="font-serif font-semibold text-[2.4rem] leading-[1.08] sm:text-6xl sm:leading-[1.05] text-paper mb-7">
+      Classification shouldn't have to wait for the storage bin.
+    </h1>
+    <p class="text-muted text-base sm:text-lg leading-relaxed mb-4 max-w-xl">
+      RTHS moves Harmonised System classification to the moment of barcode scan — before a pallet ever reaches a shelf — so customs risk, not just dimensions and weight, decides where inbound inventory goes.
+    </p>
+    <p class="text-faint text-sm leading-relaxed mb-10 max-w-xl">
+      MSc research project, Logistics &amp; Supply Chain Management, Universitat Autònoma de Barcelona. Proof-of-concept simulation across a 10,000-record synthetic dataset and eight product categories.
+    </p>
+
+    <div class="flex flex-wrap gap-4 mb-14">
+      <a href="#framework" class="btn btn-brass">Walk through the architecture <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a href="#formula" class="btn btn-line">Read the equation</a>
+    </div>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat-cell">
+      <div class="stat-num">&lt;0.5s</div>
+      <div class="stat-lbl">Classification latency per scan, asynchronous inference</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num text-tgreen">62.7%</div>
+      <div class="stat-lbl">Of volume routed straight to put-away, no hold</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">−45%</div>
+      <div class="stat-lbl">Projected reduction in customs rejections</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">€220K</div>
+      <div class="stat-lbl">Projected annual net benefit, mid-size 3PL</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PROBLEM VS INSIGHT ============ -->
+<section id="problem" class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+  <div class="mb-14 max-w-2xl">
+    <div class="section-kicker mb-3">01 — The gap</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper mb-5">Every WMS classifies after storage. That's the whole problem.</h2>
+    <p class="text-muted leading-relaxed">Put-away decisions are made on dimensions, weight, and pick frequency — never on tariff exposure. Classification happens later, manually, at export. Industry estimates put <span class="text-paper">20–40% of large-retail customs delays</span> down to avoidable errors made in that gap, and misclassification penalties in the EU can exceed <span class="text-paper">€50,000 per shipment</span>.</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 border border-line">
+    <div class="p-8 md:p-10 md:border-r border-line">
+      <div class="flex items-center gap-3 mb-6">
+        <svg class="icon text-tred" style="width:20px;height:20px"><use href="#i-alert"/></svg>
+        <h3 class="font-serif text-xl text-paper">The legacy workflow</h3>
+      </div>
+      <ul class="space-y-4 text-sm text-muted mb-8">
+        <li><span class="text-paper font-medium">24–48 hour staging holds.</span> Pallets sit idle awaiting manual broker review before any export filing can begin.</li>
+        <li><span class="text-paper font-medium">Storage decided blind.</span> High-duty and low-duty goods are shelved side by side with no tariff-risk awareness.</li>
+        <li><span class="text-paper font-medium">Errors surface late.</span> Reverse logistics kicks in only once goods are already deep in the supply chain.</li>
+      </ul>
+      <div class="border-t border-line pt-5 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-faint mb-1">Baseline hold, all items</div>
+          <div class="font-mono text-2xl text-paper">48.0 hrs</div>
+        </div>
+        <span class="text-[11px] text-tred border border-tred/40 px-2 py-1">100% staged</span>
+      </div>
+    </div>
+
+    <div class="p-8 md:p-10">
+      <div class="flex items-center gap-3 mb-6">
+        <svg class="icon text-tgreen" style="width:20px;height:20px"><use href="#i-scan"/></svg>
+        <h3 class="font-serif text-xl text-paper">The RTHS workflow</h3>
+      </div>
+      <ul class="space-y-4 text-sm text-muted mb-8">
+        <li><span class="text-paper font-medium">Classified at the scan.</span> ATLAS returns an HS code and a confidence score in well under 0.5 seconds, asynchronously.</li>
+        <li><span class="text-paper font-medium">Risk, not guesswork.</span> Confidence is combined with duty exposure, penalty severity, volume and expiry into one score.</li>
+        <li><span class="text-paper font-medium">Routed automatically.</span> Three tiers — GREEN, YELLOW, RED — tell the WMS exactly where to send the pallet.</li>
+      </ul>
+      <div class="border-t border-line pt-5 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-faint mb-1">Weighted mean hold, RTHS</div>
+          <div class="font-mono text-2xl text-paper">7.42 hrs</div>
+        </div>
+        <span class="text-[11px] text-tgreen border border-tgreen/40 px-2 py-1">−84.5%</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THEORETICAL GROUNDING ============ -->
+<section class="rule rule-b border-line bg-ink2/40">
+<div class="max-w-6xl mx-auto px-6 py-20 md:py-24">
+  <div class="mb-12 max-w-2xl">
+    <div class="section-kicker mb-3">02 — Why it works</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper">Grounded in three literatures, not just one product idea.</h2>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-px bg-line border border-line mb-10">
+    <div class="bg-ink p-7">
+      <h3 class="text-paper font-semibold mb-3 text-sm">Decision theory under uncertainty</h3>
+      <p class="text-muted text-sm leading-relaxed">Von Neumann &amp; Morgenstern's expected-utility logic treats put-away as a choice under uncertainty. ATLAS's confidence score stands in for a probability estimate; the risk formula scales the response to both the odds and the cost of being wrong.</p>
+    </div>
+    <div class="bg-ink p-7">
+      <h3 class="text-paper font-semibold mb-3 text-sm">Information processing theory</h3>
+      <p class="text-muted text-sm leading-relaxed">Galbraith frames the 24–48 hour delay as a capacity mismatch: human customs teams can't process classification requests at inbound scale. RTHS substitutes machine processing at the exact point that mismatch occurs.</p>
+    </div>
+    <div class="bg-ink p-7">
+      <h3 class="text-paper font-semibold mb-3 text-sm">Industry 4.0 / cyber-physical systems</h3>
+      <p class="text-muted text-sm leading-relaxed">A dock that classifies goods automatically and routes them by an AI-generated score is a cyber-physical system — a physical process augmented by a digital decision layer, per Kagermann and Lee.</p>
+    </div>
+  </div>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line">
+    <div class="bg-ink2 p-6">
+      <div class="text-brass font-mono text-xs mb-2">parallelism</div>
+      <p class="text-muted text-sm leading-relaxed">Scanning never waits on the model — classification runs asynchronously in a background thread.</p>
+    </div>
+    <div class="bg-ink2 p-6">
+      <div class="text-brass font-mono text-xs mb-2">progressive commitment</div>
+      <p class="text-muted text-sm leading-relaxed">Low-risk items commit to storage immediately; only uncertain cases are held for review.</p>
+    </div>
+    <div class="bg-ink2 p-6">
+      <div class="text-brass font-mono text-xs mb-2">risk proportionality</div>
+      <p class="text-muted text-sm leading-relaxed">Scrutiny scales with exposure — a multi-factor score, never a single pass/fail accuracy threshold.</p>
+    </div>
+    <div class="bg-ink2 p-6">
+      <div class="text-brass font-mono text-xs mb-2">graceful degradation</div>
+      <p class="text-muted text-sm leading-relaxed">Every scan is persisted regardless of classifier uptime, so nothing is lost if ATLAS is unreachable.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ FRAMEWORK (5 COMPONENTS) ============ -->
+<section id="framework" class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+  <div class="mb-14 max-w-2xl">
+    <div class="section-kicker mb-3">03 — Architecture</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper mb-5">Five components, one asynchronous pipeline.</h2>
+    <p class="text-muted leading-relaxed">RTHS is formally defined as a tuple F = (C1, C2, C3, C4, C5, I, O). Each scan is persisted immediately; classification happens in the background, so the scanner is never blocked. Select a component to see its role.</p>
+  </div>
+
+  <div class="relative mb-10 overflow-x-auto">
+    <div class="flex justify-between min-w-[600px] relative px-2" style="padding-top:0;">
+      <div class="track-line"></div>
+      <button class="step-btn flex flex-col items-center gap-3 relative z-10 flex-1" data-step="1" onclick="setStep(1)">
+        <span class="track-node"><svg class="icon" style="width:18px;height:18px"><use href="#i-barcode"/></svg></span>
+        <span class="text-[11px] font-mono text-muted step-lbl">C1</span>
+      </button>
+      <button class="step-btn flex flex-col items-center gap-3 relative z-10 flex-1" data-step="2" onclick="setStep(2)">
+        <span class="track-node"><svg class="icon" style="width:18px;height:18px"><use href="#i-db"/></svg></span>
+        <span class="text-[11px] font-mono text-muted step-lbl">C2</span>
+      </button>
+      <button class="step-btn flex flex-col items-center gap-3 relative z-10 flex-1" data-step="3" onclick="setStep(3)">
+        <span class="track-node"><svg class="icon" style="width:18px;height:18px"><use href="#i-cpu"/></svg></span>
+        <span class="text-[11px] font-mono text-muted step-lbl">C3</span>
+      </button>
+      <button class="step-btn flex flex-col items-center gap-3 relative z-10 flex-1" data-step="4" onclick="setStep(4)">
+        <span class="track-node"><svg class="icon" style="width:18px;height:18px"><use href="#i-shield"/></svg></span>
+        <span class="text-[11px] font-mono text-muted step-lbl">C4</span>
+      </button>
+      <button class="step-btn flex flex-col items-center gap-3 relative z-10 flex-1" data-step="5" onclick="setStep(5)">
+        <span class="track-node"><svg class="icon" style="width:18px;height:18px"><use href="#i-route"/></svg></span>
+        <span class="text-[11px] font-mono text-muted step-lbl">C5</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="step-display" class="border border-line p-8 min-h-[150px]"></div>
+</section>
+
+<!-- ============ FORMULA ============ -->
+<section id="formula" class="rule rule-b border-line bg-ink2/40">
+<div class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+  <div class="mb-12 max-w-2xl">
+    <div class="section-kicker mb-3">04 — The equation</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper mb-5">Equation 1. The composite risk score.</h2>
+    <p class="text-muted leading-relaxed">Four terms, each with an operational meaning. Tap or hover a term below to see what it captures — then try your own numbers in the calculator.</p>
+  </div>
+
+  <div class="border border-line p-6 md:p-12 mb-4">
+    <div class="formula-scroll">
+      <div class="formula-grid">
+        <span class="f-rtotal">R<sub>total</sub> =</span>
+        <span class="f-bracket l"></span>
+
+        <div class="f-term" data-key="conf" onclick="pinTerm(this,'conf')" onmouseenter="showTerm('conf')" onmouseleave="hideTerm()">
+          <span class="f-expr">(1 − confidence)</span>
+          <svg class="f-brace" viewBox="0 0 100 16" preserveAspectRatio="none"><path d="M2,3 Q20,3 30,11 Q35,15 50,15 Q65,15 70,11 Q80,3 98,3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span class="f-label">chance of being wrong</span>
+        </div>
+
+        <span class="f-op">×</span>
+
+        <div class="f-term" data-key="cost" onclick="pinTerm(this,'cost')" onmouseenter="showTerm('cost')" onmouseleave="hideTerm()">
+          <span class="f-expr">(V · d + P<sub>reg</sub> · r<sub>reg</sub>)</span>
+          <svg class="f-brace" viewBox="0 0 100 16" preserveAspectRatio="none"><path d="M2,3 Q20,3 30,11 Q35,15 50,15 Q65,15 70,11 Q80,3 98,3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span class="f-label">cost / consequence if wrong</span>
+        </div>
+
+        <span class="f-op">×</span>
+
+        <div class="f-term" data-key="vol" onclick="pinTerm(this,'vol')" onmouseenter="showTerm('vol')" onmouseleave="hideTerm()">
+          <span class="f-expr">volume factor</span>
+          <svg class="f-brace" viewBox="0 0 100 16" preserveAspectRatio="none"><path d="M2,3 Q20,3 30,11 Q35,15 50,15 Q65,15 70,11 Q80,3 98,3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span class="f-label">how many units are affected</span>
+        </div>
+
+        <span class="f-op">×</span>
+
+        <div class="f-term" data-key="exp" onclick="pinTerm(this,'exp')" onmouseenter="showTerm('exp')" onmouseleave="hideTerm()">
+          <span class="f-expr">expiry factor</span>
+          <svg class="f-brace" viewBox="0 0 100 16" preserveAspectRatio="none"><path d="M2,3 Q20,3 30,11 Q35,15 50,15 Q65,15 70,11 Q80,3 98,3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span class="f-label">urgency if it's perishable</span>
+        </div>
+
+        <span class="f-bracket r"></span>
+      </div>
+    </div>
+    <p class="text-center text-[11px] text-faint mt-2 sm:hidden">← scroll to see the full equation →</p>
+  </div>
+
+  <div id="formula-info" class="border border-line border-t-0 p-6 text-sm text-muted leading-relaxed min-h-[64px]">
+    <span class="text-brass font-medium">Tap a term above</span> — or a category chip in the calculator below — to see its definition and how it moves the score.
+  </div>
+
+  <!-- ===== calculator ===== -->
+  <div class="mt-16">
+    <div class="flex items-center gap-3 mb-2">
+      <h3 class="font-serif text-2xl text-paper">Try the formula</h3>
+      <span class="text-[11px] font-mono text-faint border border-line px-2 py-0.5">live, client-side</span>
+    </div>
+    <p class="text-muted text-sm mb-8 max-w-xl">Start from a category calibrated in Table 2 of the paper, or move the controls yourself. The tier boundaries are exactly those in Equation 1 / Table 1.</p>
+
+    <div class="flex flex-wrap gap-2 mb-10" id="preset-chips"></div>
+
+    <div class="grid lg:grid-cols-5 gap-10">
+      <div class="lg:col-span-3 grid sm:grid-cols-2 gap-x-8 gap-y-7">
+        <div>
+          <div class="field-label"><span>ATLAS confidence <em class="not-italic text-faint font-mono">c</em></span><span class="field-val" id="v-conf">0.75</span></div>
+          <input type="range" id="conf" min="0.30" max="0.99" step="0.01" value="0.75" oninput="recalc()" aria-label="ATLAS confidence">
+        </div>
+        <div>
+          <div class="field-label"><span>Declared value <em class="not-italic text-faint font-mono">V</em> (€/unit)</span><span class="field-val" id="v-val-echo">50</span></div>
+          <input type="range" id="val" min="0" max="1000" step="5" value="50" oninput="recalc()" aria-label="Declared value per unit in euros">
+        </div>
+        <div>
+          <div class="field-label"><span>Duty rate <em class="not-italic text-faint font-mono">d</em></span><span class="field-val" id="v-duty">10.0%</span></div>
+          <input type="range" id="duty" min="0" max="0.30" step="0.005" value="0.10" oninput="recalc()" aria-label="Duty rate">
+        </div>
+        <div>
+          <div class="field-label"><span>Regulatory penalty <em class="not-italic text-faint font-mono">P<sub>reg</sub></em></span></div>
+          <select id="preg" class="plain" onchange="recalc()" aria-label="Regulatory penalty severity">
+            <option value="1">Standard (1.0)</option>
+            <option value="5">Pharmaceutical (5.0)</option>
+            <option value="10">Military / defense (10.0)</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label"><span>Scrutiny factor <em class="not-italic text-faint font-mono">r<sub>reg</sub></em></span><span class="field-val" id="v-rreg">0.50</span></div>
+          <input type="range" id="rreg" min="0" max="1" step="0.05" value="0.50" oninput="recalc()" aria-label="Scrutiny factor">
+        </div>
+        <div>
+          <div class="field-label"><span>Pallet quantity</span><span class="field-val" id="v-pallet">300 units</span></div>
+          <input type="range" id="pallet" min="12" max="1200" step="6" value="300" oninput="recalc()" aria-label="Pallet quantity">
+        </div>
+        <div class="sm:col-span-2 flex items-center gap-6 pt-1">
+          <label class="flex items-center gap-2 text-sm text-paper cursor-pointer select-none">
+            <input type="checkbox" id="perishable" onchange="recalc()" class="accent-brass w-4 h-4" aria-label="Perishable item">
+            Perishable item
+          </label>
+          <div class="flex-1" id="days-wrap">
+            <div class="field-label"><span>Days to expiry</span><span class="field-val" id="v-days">60</span></div>
+            <input type="range" id="days" min="0" max="120" step="1" value="60" oninput="recalc()" aria-label="Days to expiry">
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-2 border border-line p-7 flex flex-col">
+        <div class="text-[11px] text-faint mb-1">Composite risk score</div>
+        <div class="flex items-baseline gap-3 mb-5">
+          <span class="font-mono text-4xl text-paper" id="out-r">0.000</span>
+          <span id="out-tier" class="text-xs font-semibold px-2.5 py-1 border"></span>
+        </div>
+        <div class="space-y-2 font-mono text-xs text-muted mb-6">
+          <div class="flex justify-between"><span>(1 − c)</span><span id="out-a" class="text-paper">–</span></div>
+          <div class="flex justify-between"><span>V·d + P<sub>reg</sub>·r<sub>reg</sub></span><span id="out-b" class="text-paper">–</span></div>
+          <div class="flex justify-between"><span>volume factor</span><span id="out-c" class="text-paper">–</span></div>
+          <div class="flex justify-between"><span>expiry factor</span><span id="out-d" class="text-paper">–</span></div>
+        </div>
+        <div class="border-t border-line pt-5 mt-auto">
+          <div class="text-[11px] text-faint mb-1">Warehouse action</div>
+          <p class="text-sm text-paper leading-relaxed" id="out-action">—</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ RISK TIERS ============ -->
+<section id="tiers" class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+  <div class="mb-14 max-w-2xl">
+    <div class="section-kicker mb-3">05 — Routing</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper mb-5">Three channels, like a customs hall.</h2>
+    <p class="text-muted leading-relaxed">Every scored item is routed the moment C4 finishes — no batch, no waiting for a human queue. Simulated distribution across the 10,000-record inbound dataset.</p>
+  </div>
+
+  <div class="grid lg:grid-cols-12 gap-10 items-start">
+    <div class="lg:col-span-5 border border-line p-6">
+      <div class="h-64 relative"><canvas id="tierDonut"></canvas></div>
+      <p class="text-[11px] text-faint text-center mt-5">n = 10,000 simulated inbound scans, 8 product categories</p>
+    </div>
+
+    <div class="lg:col-span-7 space-y-3">
+      <div id="ch-green" class="channel" style="border-top-color:var(--tgreen)" onclick="highlightTier('green')">
+        <div class="flex justify-between items-start mb-2 gap-3">
+          <div>
+            <span class="tier-dot" style="background:var(--tgreen)"></span>
+            <span class="text-sm font-semibold text-paper">GREEN — R<sub>total</sub> ≤ 0.02</span>
+          </div>
+          <span class="font-mono text-xl text-tgreen">62.7%</span>
+        </div>
+        <p class="text-sm text-muted leading-relaxed">Direct to production bin, effectively no hold. High classifier certainty and low duty/regulatory exposure.</p>
+      </div>
+
+      <div id="ch-yellow" class="channel" style="border-top-color:var(--tamber)" onclick="highlightTier('yellow')">
+        <div class="flex justify-between items-start mb-2 gap-3">
+          <div>
+            <span class="tier-dot" style="background:var(--tamber)"></span>
+            <span class="text-sm font-semibold text-paper">YELLOW — 0.02 &lt; R<sub>total</sub> ≤ 1.00</span>
+          </div>
+          <span class="font-mono text-xl text-tamber">22.8%</span>
+        </div>
+        <p class="text-sm text-muted leading-relaxed">Validation staging — a customs spot-check within roughly two hours before release.</p>
+      </div>
+
+      <div id="ch-red" class="channel" style="border-top-color:var(--tred)" onclick="highlightTier('red')">
+        <div class="flex justify-between items-start mb-2 gap-3">
+          <div>
+            <span class="tier-dot" style="background:var(--tred)"></span>
+            <span class="text-sm font-semibold text-paper">RED — R<sub>total</sub> &gt; 1.00</span>
+          </div>
+          <span class="font-mono text-xl text-tred">14.5%</span>
+        </div>
+        <p class="text-sm text-muted leading-relaxed">Quarantine bin — full manual broker review, with an HS appeal path if necessary.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- category insights -->
+  <div class="mt-20">
+    <h3 class="font-serif text-2xl text-paper mb-2">Risk by category</h3>
+    <p class="text-muted text-sm mb-8 max-w-xl">Simulated average score and dominant routing tier for each of the eight categories in the dataset.</p>
+    <div class="overflow-x-auto border border-line">
+      <table class="ledger-table min-w-[720px]">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Avg R<sub>total</sub></th>
+            <th>Primary tier</th>
+            <th>What's driving it</th>
+          </tr>
+        </thead>
+        <tbody id="cat-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="results" class="rule rule-b border-line bg-ink2/40">
+<div class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+  <div class="mb-14 max-w-2xl">
+    <div class="section-kicker mb-3">06 — Projected impact</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper mb-5">What the simulation projects at scale.</h2>
+    <p class="text-muted leading-relaxed">Modelled for a mid-size 3PL handling roughly 2,000 inbound SKUs a day, using the simulated tier shares and a conservative set of capture-rate and cost assumptions — projections, not measured outcomes.</p>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 border border-line mb-14">
+    <div class="p-7 border-r border-b md:border-b-0 border-line">
+      <div class="font-mono text-3xl text-paper mb-2">−45%</div>
+      <div class="text-sm text-paper font-medium mb-1">Customs rejections</div>
+      <p class="text-xs text-muted leading-relaxed">Modelled residual escape rate of 54.7%, down from 100% baseline exposure.</p>
+    </div>
+    <div class="p-7 border-b md:border-b-0 md:border-r border-line">
+      <div class="font-mono text-3xl text-paper mb-2">+41%</div>
+      <div class="text-sm text-paper font-medium mb-1">Inbound throughput</div>
+      <p class="text-xs text-muted leading-relaxed">Conservative midpoint from an 84.5% cut in mean processing time per item.</p>
+    </div>
+    <div class="p-7 border-r border-line">
+      <div class="font-mono text-3xl text-paper mb-2">−22%</div>
+      <div class="text-sm text-paper font-medium mb-1">Staging footprint</div>
+      <p class="text-xs text-muted leading-relaxed">Realized share of an 84.6% theoretical cut in inventory-days, after operational constraints.</p>
+    </div>
+    <div class="p-7">
+      <div class="font-mono text-3xl text-brass mb-2">€220K</div>
+      <div class="text-sm text-paper font-medium mb-1">Annual net benefit</div>
+      <p class="text-xs text-muted leading-relaxed">Penalty avoidance, labour savings and throughput gains, before implementation cost.</p>
+    </div>
+  </div>
+
+  <div class="border border-line p-6 md:p-8 mb-16">
+    <h3 class="text-paper font-semibold mb-1">Dock processing delay by route</h3>
+    <p class="text-xs text-muted mb-6">Static 100% staging hold vs. RTHS's risk-proportional weighted average.</p>
+    <div class="h-72"><canvas id="barChart"></canvas></div>
+  </div>
+
+  <!-- economic table -->
+  <div>
+    <h3 class="font-serif text-2xl text-paper mb-2">Illustrative economic model</h3>
+    <p class="text-muted text-sm mb-8 max-w-xl">Order-of-magnitude figures only — sensitive to capture-rate assumptions and the tier distribution an actual pilot would observe.</p>
+    <div class="overflow-x-auto border border-line">
+      <table class="ledger-table min-w-[640px]">
+        <thead>
+          <tr><th>Item</th><th>Annual value</th><th>Basis</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Reduction in customs penalties &amp; duty underpayments</td>
+            <td class="num">€120,000</td>
+            <td class="text-muted">45.3% reduction on an estimated €266K baseline (~19 incidents × €50K, 28% baseline rejection rate)</td>
+          </tr>
+          <tr>
+            <td>Labour savings, reduced manual classification</td>
+            <td class="num">€60,000</td>
+            <td class="text-muted">~1.5 FTE customs-analyst roles no longer required (€40K fully loaded, each)</td>
+          </tr>
+          <tr>
+            <td>Throughput gain, eliminated staging delay</td>
+            <td class="num">€40,000</td>
+            <td class="text-muted">22% staging-space reduction, valued as operational efficiency</td>
+          </tr>
+          <tr>
+            <td class="text-paper font-semibold">Total annual benefit</td>
+            <td class="num text-brass font-semibold">€220,000</td>
+            <td class="text-muted">Conservative — excludes downstream customs clearance time savings</td>
+          </tr>
+          <tr>
+            <td>Estimated implementation cost, Year 1</td>
+            <td class="num">€120K–€180K</td>
+            <td class="text-muted">Development (€80K), ATLAS API subscription (€20–40K/yr), infrastructure (€20–60K)</td>
+          </tr>
+          <tr>
+            <td class="text-paper font-semibold">Payback period</td>
+            <td class="num text-paper font-semibold">14–18 months</td>
+            <td class="text-muted">€220K annual benefit against an annualised €120–150K implementation cost</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ SCOPE & LIMITATIONS ============ -->
+<section id="scope" class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+  <div class="mb-12 max-w-2xl">
+    <div class="section-kicker mb-3">07 — Scope</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper mb-5">What this is, and what it isn't yet.</h2>
+    <p class="text-muted leading-relaxed">This is a proof-of-concept simulation, not a validated production result. Treating it otherwise would misrepresent the research — so here's what's still open.</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-px bg-line border border-line mb-10">
+    <div class="bg-ink p-6">
+      <h4 class="text-paper text-sm font-semibold mb-2">Synthetic dataset</h4>
+      <p class="text-muted text-sm leading-relaxed">10,000 records were generated, not captured from a live receiving dock. Empirical validation on real scan data is the next step.</p>
+    </div>
+    <div class="bg-ink p-6">
+      <h4 class="text-paper text-sm font-semibold mb-2">Mock classifier</h4>
+      <p class="text-muted text-sm leading-relaxed">Confidence scores come from a heuristic stand-in for ATLAS, not the live model's calibrated token-level output.</p>
+    </div>
+    <div class="bg-ink p-6">
+      <h4 class="text-paper text-sm font-semibold mb-2">No ground-truth check</h4>
+      <p class="text-muted text-sm leading-relaxed">HS codes weren't verified against real customs rulings — the 45% figure is a modelled estimate, not a measured one.</p>
+    </div>
+    <div class="bg-ink p-6">
+      <h4 class="text-paper text-sm font-semibold mb-2">Single product mix, U.S. HTS</h4>
+      <p class="text-muted text-sm leading-relaxed">Configured for one generalized 8-category mix under U.S. Harmonised Tariff Schedule rules; other jurisdictions need localisation.</p>
+    </div>
+  </div>
+
+  <div class="border border-line p-7 flex gap-5 items-start">
+    <svg class="icon text-brass flex-shrink-0 mt-0.5" style="width:20px;height:20px"><use href="#i-shield"/></svg>
+    <p class="text-sm text-muted leading-relaxed">RTHS is a decision-support layer, not a replacement for a licensed customs broker — consistent with CBP ruling HQ H350722, which holds that the broker retains responsibility for entry classification regardless of which tool assisted the screening.</p>
+  </div>
+</section>
+
+<!-- ============ COMPETENCIES ============ -->
+<section id="skills" class="rule border-line bg-ink2/40">
+<div class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+  <div class="mb-14 max-w-2xl">
+    <div class="section-kicker mb-3">08 — Competencies</div>
+    <h2 class="font-serif text-3xl sm:text-4xl text-paper">Where trade compliance meets applied AI.</h2>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-10">
+    <div>
+      <h3 class="text-paper font-semibold mb-5 flex items-center gap-2 text-sm"><svg class="icon text-brass"><use href="#i-book"/></svg> Trade compliance &amp; logistics</h3>
+      <div class="flex flex-wrap gap-2">
+        <span class="tag">Harmonised System (HS) codes</span>
+        <span class="tag">WCO risk management</span>
+        <span class="tag">Customs valuation</span>
+        <span class="tag">Tariff &amp; duty exposure modelling</span>
+        <span class="tag">WMS inbound integration</span>
+        <span class="tag">3PL dock operations</span>
+      </div>
+    </div>
+    <div>
+      <h3 class="text-paper font-semibold mb-5 flex items-center gap-2 text-sm"><svg class="icon text-brass"><use href="#i-cpu"/></svg> AI engineering &amp; software</h3>
+      <div class="flex flex-wrap gap-2">
+        <span class="tag">Python</span>
+        <span class="tag">LLM integration (ATLAS / LLaMA 3.3)</span>
+        <span class="tag">Async processing (ThreadPoolExecutor)</span>
+        <span class="tag">Risk &amp; decision modelling</span>
+        <span class="tag">Simulation (Pandas, NumPy, Faker)</span>
+        <span class="tag">SQLite / PostgreSQL</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="max-w-6xl mx-auto px-6 py-16">
+  <div class="grid md:grid-cols-3 gap-10 mb-14">
+    <div class="md:col-span-2">
+      <h3 class="font-serif text-2xl text-paper mb-2">Akash Pillutla</h3>
+      <p class="text-sm text-muted mb-6 max-w-sm">MSc Logistics &amp; Supply Chain Management, Universitat Autònoma de Barcelona. Formerly Amazon, Deloitte.</p>
+      <div class="flex gap-3">
+        <a href="https://github.com/Rydberg24/RTHS" target="_blank" rel="noopener" class="btn btn-line text-xs">GitHub repository <svg class="icon"><use href="#i-ext"/></svg></a>
+        <a href="https://www.linkedin.com/in/akash-pillutla-013646198/" target="_blank" rel="noopener" class="btn btn-line text-xs">LinkedIn <svg class="icon"><use href="#i-ext"/></svg></a>
+      </div>
+    </div>
+    <div>
+      <div class="text-[11px] font-mono text-faint mb-3">selected references</div>
+      <ul class="text-xs text-muted space-y-2 leading-relaxed">
+        <li>FlexifyAI (2025). ATLAS: a domain-specialised LLM for HS classification. arXiv:2509.18400</li>
+        <li>World Customs Organisation (2025). WCO Time Release Study Guide, v4.</li>
+        <li>Von Neumann, J. &amp; Morgenstern, O. (1944). Theory of Games and Economic Behavior.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="rule pt-6 flex flex-col sm:flex-row justify-between gap-3 text-[11px] text-faint">
+    <span>Full paper, mathematical derivations and simulation notebooks available on request.</span>
+    <span>© 2026 Akash Pillutla</span>
+  </div>
+</footer>
+
+<script>
+/* ============ mobile menu ============ */
+function toggleMenu(open){
+  document.getElementById('mobilemenu').classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+/* ============ nav active state ============ */
+const navSections = ['problem','framework','formula','tiers','results','scope'];
+const navLinks = Array.from(document.querySelectorAll('[data-nav]'));
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      navLinks.forEach(l=>l.classList.remove('active'));
+      const match = navLinks.find(l=>l.getAttribute('href') === '#'+e.target.id);
+      if(match) match.classList.add('active');
+    }
+  });
+}, {rootMargin:'-40% 0px -50% 0px', threshold:0});
+navSections.forEach(id=>{ const el=document.getElementById(id); if(el) io.observe(el); });
+
+/* ============ framework stepper ============ */
+const stepData = {
+  1: {title:'C1 — Scan capture layer', desc:'A handheld barcode or RFID scan triggers an asynchronous JSON payload the instant a pallet hits the receiving dock — nothing downstream blocks the scanner.'},
+  2: {title:'C2 — Product resolution layer', desc:'The barcode is mapped to WMS master data: description, category, unit value (V), pallet volume and any regulatory flags.'},
+  3: {title:'C3 — ATLAS classification engine', desc:'Constructs the prompt, calls the ATLAS LLM API (LLaMA 3.3 70B base, arXiv:2509.18400), and extracts a 10-digit HS code plus a calibrated confidence score c ∈ [0,1].'},
+  4: {title:'C4 — Risk scoring module', desc:'Computes the composite risk score R_total from Equation 1 and assigns a GREEN, YELLOW or RED tier per Table 1\u2019s thresholds.'},
+  5: {title:'C5 — Routing decision layer', desc:'Translates the tier into a put-away instruction, updates the WMS, and logs the classification, confidence and model version to an audit trail.'}
+};
+function setStep(n){
+  document.querySelectorAll('.step-btn').forEach((btn)=>{
+    const active = Number(btn.dataset.step) === n;
+    btn.querySelector('.track-node').classList.toggle('active', active);
+    btn.querySelector('.step-lbl').style.color = active ? 'var(--brass)' : 'var(--muted)';
+  });
+  const d = stepData[n];
+  document.getElementById('step-display').innerHTML =
+    '<h4 class="font-serif text-xl text-paper mb-2">'+d.title+'</h4>'+
+    '<p class="text-sm text-muted leading-relaxed max-w-2xl">'+d.desc+'</p>';
+}
+setStep(1);
+
+/* ============ tier highlight + donut ============ */
+function highlightTier(color){
+  ['green','yellow','red'].forEach(c=>{
+    const el = document.getElementById('ch-'+c);
+    el.classList.toggle('dim', c !== color);
+  });
+}
+const donutCtx = document.getElementById('tierDonut').getContext('2d');
+new Chart(donutCtx, {
+  type:'doughnut',
+  data:{
+    labels:['GREEN — direct put-away','YELLOW — spot check','RED — quarantine'],
+    datasets:[{ data:[62.7,22.8,14.5], backgroundColor:['#3FC08D','#E7A93D','#DB6552'], borderWidth:0 }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false, cutout:'68%',
+    plugins:{ legend:{ position:'bottom', labels:{ color:'#9CA2B7', font:{family:'IBM Plex Sans', size:11}, boxWidth:10, padding:14 } },
+      tooltip:{ backgroundColor:'#1A1C25', borderColor:'#2C2F3B', borderWidth:1, titleColor:'#ECEDF3', bodyColor:'#ECEDF3' } }
+  }
+});
+
+/* ============ bar chart ============ */
+new Chart(document.getElementById('barChart').getContext('2d'), {
+  type:'bar',
+  data:{
+    labels:[['Traditional','baseline'],['RTHS GREEN','(62.7%)'],['RTHS YELLOW','(22.8%)'],['RTHS RED','(14.5%)'],['RTHS weighted','average']],
+    datasets:[{ label:'Hours delay', data:[48.0,0.0,2.0,48.0,7.42],
+      backgroundColor:['#DB6552','#3FC08D','#E7A93D','#DB6552','#C9A24B'], borderRadius:3, maxBarThickness:64 }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false},
+      tooltip:{ backgroundColor:'#1A1C25', borderColor:'#2C2F3B', borderWidth:1, titleColor:'#ECEDF3', bodyColor:'#ECEDF3' } },
+    scales:{
+      y:{ grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#9CA2B7', font:{family:'IBM Plex Mono', size:11}} },
+      x:{ grid:{display:false}, ticks:{color:'#9CA2B7', font:{family:'IBM Plex Sans', size:10.5}} }
+    }
+  }
+});
+
+/* ============ formula term info ============ */
+const termInfo = {
+  conf: 'ATLAS returns a token-level confidence score c ∈ [0,1]. Lower confidence increases (1 − c), scaling up the whole risk multiplier proportionally.',
+  cost: 'Declared value (V) × duty rate (d) captures direct financial exposure; regulatory penalty severity (P_reg) × scrutiny factor (r_reg) adds non-financial exposure — pharma or defense items carry a high penalty term even at zero duty.',
+  vol:  'vol_factor = min(pallet_qty / 1200, 1.0). Scales the score to how much inventory is riding on this one classification decision.',
+  exp:  'exp_factor = 1 + max(0, 1 − days_to_expiry/90) when the item is perishable and under 90 days out; 1.0 otherwise. Adds urgency for time-sensitive goods.'
+};
+let pinnedTerm = null;
+function showTerm(key){
+  if(pinnedTerm) return;
+  document.getElementById('formula-info').innerHTML = '<span class="text-brass font-medium">'+labelFor(key)+'.</span> '+termInfo[key];
+}
+function hideTerm(){
+  if(pinnedTerm) return;
+  resetInfo();
+}
+function pinTerm(el,key){
+  document.querySelectorAll('.f-term').forEach(t=>t.classList.remove('active'));
+  if(pinnedTerm === key){ pinnedTerm = null; resetInfo(); return; }
+  pinnedTerm = key;
+  el.classList.add('active');
+  document.getElementById('formula-info').innerHTML = '<span class="text-brass font-medium">'+labelFor(key)+'.</span> '+termInfo[key];
+}
+function labelFor(key){
+  return {conf:'Chance of being wrong', cost:'Cost / consequence if wrong', vol:'How many units are affected', exp:"Urgency if it's perishable"}[key];
+}
+function resetInfo(){
+  document.getElementById('formula-info').innerHTML = '<span class="text-brass font-medium">Tap a term above</span> — or a category chip in the calculator below — to see its definition and how it moves the score.';
+}
+
+/* ============ calculator ============ */
+const categories = [
+  {name:'Pharmaceuticals', conf:0.84, val:15,  duty:0.000, preg:5,  rreg:1.0, pallet:48,  perishable:true,  days:72},
+  {name:'Beverages',       conf:0.84, val:0.5, duty:0.000, preg:1,  rreg:0.3, pallet:600, perishable:true,  days:72},
+  {name:'Laptops',         conf:0.84, val:800, duty:0.000, preg:1,  rreg:0.5, pallet:600, perishable:false, days:0},
+  {name:'Toys',            conf:0.88, val:25,  duty:0.000, preg:1,  rreg:0.5, pallet:600, perishable:false, days:0},
+  {name:'Canned Foods',    conf:0.85, val:2.5, duty:0.175, preg:1,  rreg:0.6, pallet:840, perishable:true,  days:72},
+  {name:'Automotive',      conf:0.55, val:40,  duty:0.025, preg:1,  rreg:0.8, pallet:480, perishable:false, days:0},
+  {name:'Apparel',         conf:0.84, val:30,  duty:0.165, preg:1,  rreg:0.7, pallet:840, perishable:false, days:0},
+  {name:'Furniture',       conf:0.83, val:400, duty:0.080, preg:1,  rreg:0.5, pallet:720, perishable:false, days:0},
+];
+const chipWrap = document.getElementById('preset-chips');
+categories.forEach((cat,i)=>{
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.type = 'button';
+  b.textContent = cat.name;
+  b.onclick = ()=> applyPreset(i, b);
+  chipWrap.appendChild(b);
+});
+function applyPreset(i, btn){
+  const c = categories[i];
+  document.querySelectorAll('#preset-chips .chip').forEach(x=>x.classList.remove('chip-active'));
+  btn.classList.add('chip-active');
+  document.getElementById('conf').value = c.conf;
+  document.getElementById('val').value = c.val;
+  document.getElementById('duty').value = c.duty;
+  document.getElementById('preg').value = String(c.preg);
+  document.getElementById('rreg').value = c.rreg;
+  document.getElementById('pallet').value = c.pallet;
+  document.getElementById('perishable').checked = c.perishable;
+  document.getElementById('days').value = c.days;
+  recalc();
+}
+
+function recalc(){
+  const c     = parseFloat(document.getElementById('conf').value);
+  const V     = parseFloat(document.getElementById('val').value);
+  const d     = parseFloat(document.getElementById('duty').value);
+  const Preg  = parseFloat(document.getElementById('preg').value);
+  const rreg  = parseFloat(document.getElementById('rreg').value);
+  const pallet= parseFloat(document.getElementById('pallet').value);
+  const perishable = document.getElementById('perishable').checked;
+  const days  = parseFloat(document.getElementById('days').value);
+
+  document.getElementById('days-wrap').style.opacity = perishable ? '1' : '0.35';
+  document.getElementById('days').disabled = !perishable;
+
+  document.getElementById('v-conf').textContent = c.toFixed(2);
+  document.getElementById('v-val-echo').textContent = '€'+V.toFixed(0);
+  document.getElementById('v-duty').textContent = (d*100).toFixed(1)+'%';
+  document.getElementById('v-rreg').textContent = rreg.toFixed(2);
+  document.getElementById('v-pallet').textContent = pallet.toFixed(0)+' units';
+  document.getElementById('v-days').textContent = days.toFixed(0);
+
+  const a = 1 - c;
+  const cost = V*d + Preg*rreg;
+  const vol = Math.min(pallet/1200, 1.0);
+  let exp = 1.0;
+  if(perishable && days < 90){ exp = 1 + Math.max(0, 1 - days/90); }
+  const R = a * cost * vol * exp;
+
+  document.getElementById('out-a').textContent = a.toFixed(3);
+  document.getElementById('out-b').textContent = cost.toFixed(3);
+  document.getElementById('out-c').textContent = vol.toFixed(3);
+  document.getElementById('out-d').textContent = exp.toFixed(3);
+  document.getElementById('out-r').textContent = R < 10 ? R.toFixed(3) : R.toFixed(1);
+
+  const tierEl = document.getElementById('out-tier');
+  const actionEl = document.getElementById('out-action');
+  if(R <= 0.02){
+    tierEl.textContent = 'GREEN'; tierEl.style.color = '#3FC08D'; tierEl.style.borderColor = '#3FC08D';
+    actionEl.textContent = 'Direct to production bin — minimal hold required.';
+  } else if(R <= 1.00){
+    tierEl.textContent = 'YELLOW'; tierEl.style.color = '#E7A93D'; tierEl.style.borderColor = '#E7A93D';
+    actionEl.textContent = 'Validation staging — customs spot check within about two hours.';
+  } else {
+    tierEl.textContent = 'RED'; tierEl.style.color = '#DB6552'; tierEl.style.borderColor = '#DB6552';
+    actionEl.textContent = 'Quarantine bin — full manual review, HS appeal if necessary.';
+  }
+}
+recalc();
+
+/* ============ category insight table ============ */
+const catRows = [
+  {name:'Furniture / Office Chairs', r:'4.08', tier:'RED',        color:'#DB6552', note:'Names like "Aeron" weren\u2019t recognized by the keyword heuristic; combined with a €400 unit value and 7.5% duty, risk spiked sharply.'},
+  {name:'Apparel / Menswear',        r:'0.72', tier:'YELLOW/RED', color:'#E7A93D', note:'A 16.5% duty rate plus average confidence put many items near the top of YELLOW, with some crossing into RED.'},
+  {name:'Automotive / Brake Pads',   r:'0.42', tier:'YELLOW',     color:'#E7A93D', note:'Part-number-style descriptions (e.g. "BOSCH 0 986 494 411") held base confidence at 0.55 by design.'},
+  {name:'Canned Foods',              r:'0.20', tier:'YELLOW',     color:'#E7A93D', note:'A high 17.5% duty rate was mostly offset by low unit value (€2.50) and clear descriptions.'},
+  {name:'Electronics / Laptops',     r:'0.064',tier:'GREEN',      color:'#3FC08D', note:'Clear consumer names drove high confidence; a zero duty rate kept financial exposure minimal.'},
+  {name:'Beverages / Bottled Water', r:'0.058',tier:'GREEN',      color:'#3FC08D', note:'High confidence plus a negligible €0.50 unit value absorbed any remaining uncertainty.'},
+  {name:'Toys / Board Games',        r:'0.057',tier:'GREEN',      color:'#3FC08D', note:'Clear consumer names drove high confidence; a zero duty rate kept exposure minimal.'},
+  {name:'Pharmaceuticals / OTC',     r:'0.049',tier:'GREEN/YELLOW',color:'#3FC08D', note:'Despite zero duty, the P_reg × r_reg = 5.0 penalty term pushed low-confidence, ambiguous items toward RED individually.'},
+];
+const catBody = document.getElementById('cat-table-body');
+catRows.forEach(row=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td class="text-paper">'+row.name+'</td>'+
+    '<td class="num">'+row.r+'</td>'+
+    '<td><span class="tier-dot" style="background:'+row.color+'"></span>'+row.tier+'</td>'+
+    '<td class="text-muted">'+row.note+'</td>';
+  catBody.appendChild(tr);
+});
+</script>
+</body>
+</html>
